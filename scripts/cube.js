@@ -2,6 +2,7 @@ import * as THREE from '../resources/threejs/build/three.module.js';
 
 let cube_state = "RYRWBOBGGBROWYYRGWGOYWORGWBYRYRYBGWOYWOGBRWOWBOYGGROBB"
 //				 "012345678901234567890123456789012345678901234567890123"
+let moveSequence = ['Xi', 'U', 'U', 'Li', 'D', 'D', 'B', 'B', 'Di', 'B', 'Li', 'U', 'U', 'Li', 'U', 'Di', 'Ri', 'F', 'F', 'R', 'R', 'U', 'U', 'B', 'B', 'U', 'U', 'L', 'L', 'Ui', 'R', 'R']
 let cube
 
 const red = new THREE.Color(1, 0, 0);
@@ -13,14 +14,18 @@ const yellow = new THREE.Color(1, 1, 0);
 const black = new THREE.Color(0, 0, 0);
 const magenta = new THREE.Color(1, 0, 1);
 const c = {"W": white, "O": orange, "R": red, "B": blue, "Y": yellow, "G": green}
-const boxSize = 0.95
+const boxSize = 0.97
 const cubies = []
-const rotationAxes = new Array(27)
-const rotationAmount = new Array(27)
-const rotationTarget = new Array(27)
-let rotating = false
+let rotatingCubies = []
+let rotationAxes = 'x'
+let rotationAmount = 0
+let rotationTarget = 0
+let moveCallback = null
 
-window.setRotate = setRotate;
+window.makeMove = makeMove;
+window.makeSequenceOfMoves = makeSequenceOfMoves;
+
+window.solve = () => {makeSequenceOfMoves(moveSequence)}
 
 function main() {
 	const canvas = document.querySelector('#c');
@@ -34,10 +39,13 @@ function main() {
 	});
 	const fov = 50;
 	const aspect = canvas.width/canvas.height // the canvas default
-	const near = 4;
+	const near = 0.01;
 	const far = 9;
 	const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-	camera.position.z = 7;
+	camera.position.set(3, 3, 5);
+	camera.rotateOnAxis(new THREE.Vector3(0, 1, 0), 0.55)
+	camera.rotateOnAxis(new THREE.Vector3(1, 0, 0), -0.52)
+	//camera.rotation.set(-Math.PI/4, Math.PI/4, 0)
 
 	const scene = new THREE.Scene();
 
@@ -45,7 +53,8 @@ function main() {
 		const color = 0xFFFFFF;
 		const intensity = 2;
 		const light = new THREE.DirectionalLight(color, intensity);
-		light.position.set(0, 0, 4);
+		light.position.set(3, 3, 3);
+		light.rotation.set(-Math.PI/4, Math.PI/4, 0);
 		scene.add(light);
 	}
 
@@ -54,12 +63,32 @@ function main() {
 
 	function render(time) {
 		time *= 0.001; // convert time to seconds
-		if(rotating) {
-			for (let cube of cubies) {
-				rotateAboutAxis(cube, 0.01, 'x')
-				rotateAboutAxis(cube, 0.01, 'y')
-			}
+		// if(rotating) {
+		// 	for (let cube of cubies) {
+		// 		rotateAboutAxis(cube, 0.01, 'x')
+		// 		rotateAboutAxis(cube, 0.01, 'y')
+		// 	}
+		// }
+
+		const rotationSpeed = Math.PI / 50
+		if(rotatingCubies.length > 0) {
+			for(let cube of rotatingCubies)
+				rotateAboutAxis(cube,
+					Math.sign(rotationTarget) * rotationSpeed, rotationAxes)
+			rotationAmount += rotationSpeed
 		}
+
+		if(rotationAmount >= Math.abs(rotationTarget)) {
+			let rot = Math.abs(rotationTarget) - rotationAmount
+			for(let cube of rotatingCubies)
+				rotateAboutAxis(cube,
+					Math.sign(rotationTarget) * rot, rotationAxes)
+			rotatingCubies = []
+			rotationAmount = 0
+			if(moveCallback)
+				moveCallback()
+		}
+
 		renderer.render(scene, camera);
 
 		requestAnimationFrame(render);
@@ -68,14 +97,63 @@ function main() {
 	requestAnimationFrame(render);
 }
 
-function makeMove(move) {
-	if(move == 'Z') {
+function makeSequenceOfMoves(moves) {
+	if(moves.length == 0)
+		return
 
-	}
+	makeMove(moves[0], () => {
+		moves.splice(0, 1)
+		makeSequenceOfMoves(moves)
+	})
 }
 
-function setRotate() {
-	rotating = !rotating
+function makeMove(move, callback=null) {
+	moveCallback = callback
+	let cw = -1
+
+	if(move.length > 1)
+		cw = (move[1] == 'i') ? 1 : -1
+	move = move[0]
+	if(move == 'B' || move == 'L' || move == 'D')
+		cw = -cw
+
+	rotationTarget = cw * Math.PI/2
+
+	if(move == 'Z' || move == 'S' || move == 'F' || move == 'B') {
+		rotationAxes = 'z'
+		if(move == 'Z')
+			rotatingCubies = [...cubies]
+		else {
+			let dir = (move == 'F') ? 1 : (move == 'B' ? -1 : 0)
+			for(let cube of cubies)
+				if(Math.abs(cube.position.z - dir) < 0.1)
+					rotatingCubies.push(cube)
+		}
+	}
+
+	if(move == 'X' || move == 'M' || move == 'L' || move == 'R') {
+		rotationAxes = 'x'
+		if(move == 'X')
+			rotatingCubies = [...cubies]
+		else {
+			let dir = (move == 'R') ? 1 : (move == 'L' ? -1 : 0)
+			for(let cube of cubies)
+				if(Math.abs(cube.position.x - dir) < 0.1)
+					rotatingCubies.push(cube)
+		}
+	}
+
+	if(move == 'Y' || move == 'E' || move == 'U' || move == 'D') {
+		rotationAxes = 'y'
+		if(move == 'Y')
+			rotatingCubies = [...cubies]
+		else {
+			let dir = (move == 'U') ? 1 : (move == 'D' ? -1 : 0)
+			for(let cube of cubies)
+				if(Math.abs(cube.position.y - dir) < 0.1)
+					rotatingCubies.push(cube)
+		}
+	}
 }
 
 function rotateAboutAxis(cube, angle, axis) {
@@ -84,21 +162,21 @@ function rotateAboutAxis(cube, angle, axis) {
 		cube.position.x = 0
     	cube.position.applyAxisAngle(new THREE.Vector3(1, 0, 0), angle); // rotate the POSITION
     	cube.position.x = x
-		cube.rotateOnAxis(new THREE.Vector3(1, 0, 0), angle);
+		cube.rotateOnWorldAxis(new THREE.Vector3(1, 0, 0), angle);
 	}
 	if(axis == 'z') {
 		const z = cube.position.z
 		cube.position.z = 0
     	cube.position.applyAxisAngle(new THREE.Vector3(0, 0, 1), angle); // rotate the POSITION
     	cube.position.z = z
-		cube.rotateOnAxis(new THREE.Vector3(0, 0, 1), angle);
+		cube.rotateOnWorldAxis(new THREE.Vector3(0, 0, 1), angle);
 	}
 	if(axis == 'y') {
 		const y = cube.position.y
 		cube.position.y = 0
     	cube.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle); // rotate the POSITION
     	cube.position.y = y
-		cube.rotateOnAxis(new THREE.Vector3(0, 1, 0), angle);
+		cube.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), angle);
 	}
 }
 
