@@ -12,26 +12,7 @@
 	<script type="module" src="../scripts/cube.js"></script>
 	<br></br>
 	<button onclick="solve()">Solve</button>
-
-	<button onclick="getSteps()">GET STEPS</button>
-	<p id="steps"></p>
-		
-	<script>
-	function getSteps() {
-		const fetchPromise = fetch('http://localhost:1000/calc',{
-			headers: {
-				"Accept" : "text/plain",
-			}
-		}
-		)
-		const streamPromise = fetchPromise.then((response) => response.text())
-		streamPromise.then((j) => showSteps(j))
-
-		const showSteps = (steps) =>{
-			document.getElementById("steps").innerHTML = steps
-		}
-	}
-	</script>
+<<<<<<< HEAD
 
 	<div class="w3-third">
 		<h1>Beginner's guide to use the provided Steps: </h1>
@@ -59,6 +40,8 @@
 	<a href="index.html">Return to Home page</a>
 
 </body>
+=======
+>>>>>>> d46c22f179c7fb79e6728af029f0070785a9cb06
 
 </body>
 </html>
