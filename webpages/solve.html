@@ -5,14 +5,60 @@
 <body>
 
 	<div class="w3-container w3-blue">
-	    <h1>Solving page.</h1>
-	    <p>Description here.</p>
+	    <h1>Try and solve the cube</h1>
 	</div>
 
     <canvas id="c"></canvas>
 	<script type="module" src="../scripts/cube.js"></script>
 	<br></br>
 	<button onclick="setRotate()">Rotate</button>
+
+	<button onclick="getSteps()">GET STEPS</button>
+	<p id="steps"></p>
+		
+	<script>
+	function getSteps() {
+		const fetchPromise = fetch('http://localhost:1000/calc',{
+			headers: {
+				"Accept" : "text/plain",
+			}
+		}
+		)
+		const streamPromise = fetchPromise.then((response) => response.text())
+		streamPromise.then((j) => showSteps(j))
+
+		const showSteps = (steps) =>{
+			document.getElementById("steps").innerHTML = steps
+		}
+	}
+	</script>
+
+	<div class="w3-third">
+		<h1>Beginner's guide to use the provided Steps: </h1>
+		<p>
+			U = Upper Layer clockwise
+			D = Down Layer clockwise
+			F = Front Layer clockwise
+			B = Back Layer clockwise
+
+			Ui = Upper Layer anti-clockwise
+			Di= Down Layer anti-clockwise
+			Fi = Front Layer anti-clockwise
+			Bi = Back Layer anti-clockwise 
+
+			X = Rotate the entire cube clockwise on R (i.e. on the axis from the right of the cube)
+			Y = Rotate the entire cube clockwise on D  (i.e. on the axis from the bottom of the cube)
+			Z = Rotate the entire cube clockwise on F  (i.e. on the axis from the front of the cube)
+
+			M = Turn the middle layer between the left and right sides towards you
+			E = Turn the middle layer between the up and down sides away from you
+			S = Turn the middle layer between the front and back sides clockwise
+		</p>
+	</div>
+
+	<a href="index.html">Return to Home page</a>
+
+</body>
 
 </body>
 </html>
